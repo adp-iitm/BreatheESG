@@ -1,0 +1,4 @@
+employee_id,origin_airport,destination_airport,travel_class,distance_km,hotel_nights
+E1023,DEL,BOM,ECONOMY,1140,2
+E1108,LHR,JFK,BUSINESS,,4
+E1450,,SEA,ECONOMY,900,1

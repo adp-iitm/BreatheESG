@@ -1,0 +1,4 @@
+meter_id,billing_start,billing_end,kwh,tariff,total_cost
+MTR-101,2026-01-12,2026-02-11,12800,IND_A,1920.00
+MTR-101,2026-02-12,2026-03-11,-50,IND_A,-7.50
+MTR-204,2026-01-20,2026-02-22,8600,COM_B,1290.00
