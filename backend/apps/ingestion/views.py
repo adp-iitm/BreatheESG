@@ -12,24 +12,35 @@ from apps.normalization.models import NormalizedActivity
 
 class UploadView(APIView):
     parser_classes = [MultiPartParser]
-
     def post(self, request):
         file_obj = request.FILES.get("file")
         source_type = request.data.get("source_type")
-        company_id = request.data.get("company_id")
         uploaded_by = request.data.get("uploaded_by", "analyst@example.com")
-        if not file_obj or not source_type or not company_id:
-            return Response({"detail": "file, source_type and company_id are required"}, status=400)
-        try:
-            company = Company.objects.get(id=company_id)
-        except Company.DoesNotExist:
-            return Response({"detail": "company_id is invalid"}, status=400)
+
+        if not file_obj or not source_type:
+            return Response(
+                {"detail": "file and source_type are required"},
+                status=400
+            )
+
+        company, _ = Company.objects.get_or_create(
+            name="Demo Company",
+            defaults={"industry": "Manufacturing"}
+        )
 
         try:
             datasource = ingest_csv_and_normalize(
-                company=company, source_type=source_type, uploaded_by=uploaded_by, uploaded_file=file_obj
+                company=company,
+                source_type=source_type,
+                uploaded_by=uploaded_by,
+                uploaded_file=file_obj
             )
-            return Response(DataSourceSerializer(datasource).data, status=status.HTTP_201_CREATED)
+
+            return Response(
+                DataSourceSerializer(datasource).data,
+                status=status.HTTP_201_CREATED
+            )
+
         except ValueError as exc:
             return Response({"detail": str(exc)}, status=400)
 
