@@ -7,6 +7,16 @@ from apps.ingestion.models import DataSource, RawRecord
 from apps.normalization.services import normalize_raw_record
 
 
+def _decode_csv_payload(file_bytes):
+    # Real-world exports are often UTF-8, UTF-8 BOM, CP1252, or Latin-1.
+    for encoding in ("utf-8-sig", "utf-8", "cp1252", "latin-1"):
+        try:
+            return file_bytes.decode(encoding)
+        except UnicodeDecodeError:
+            continue
+    raise ValueError("Unable to decode CSV file. Please upload UTF-8, CP1252, or Latin-1 encoded CSV.")
+
+
 @transaction.atomic
 def ingest_csv_and_normalize(*, company, source_type, uploaded_by, uploaded_file):
     datasource = DataSource.objects.create(
@@ -16,8 +26,11 @@ def ingest_csv_and_normalize(*, company, source_type, uploaded_by, uploaded_file
         original_filename=uploaded_file.name,
         uploaded_by=uploaded_by,
     )
-    decoded = uploaded_file.read().decode("utf-8-sig")
+    file_bytes = uploaded_file.read()
+    decoded = _decode_csv_payload(file_bytes)
     reader = csv.DictReader(StringIO(decoded))
+    if not reader.fieldnames:
+        raise ValueError("CSV header row is missing or unreadable.")
     seen_keys = set()
     for row_number, row in enumerate(reader, start=2):
         raw = RawRecord.objects.create(

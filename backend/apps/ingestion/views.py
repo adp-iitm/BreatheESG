@@ -20,11 +20,18 @@ class UploadView(APIView):
         uploaded_by = request.data.get("uploaded_by", "analyst@example.com")
         if not file_obj or not source_type or not company_id:
             return Response({"detail": "file, source_type and company_id are required"}, status=400)
-        company = Company.objects.get(id=company_id)
-        datasource = ingest_csv_and_normalize(
-            company=company, source_type=source_type, uploaded_by=uploaded_by, uploaded_file=file_obj
-        )
-        return Response(DataSourceSerializer(datasource).data, status=status.HTTP_201_CREATED)
+        try:
+            company = Company.objects.get(id=company_id)
+        except Company.DoesNotExist:
+            return Response({"detail": "company_id is invalid"}, status=400)
+
+        try:
+            datasource = ingest_csv_and_normalize(
+                company=company, source_type=source_type, uploaded_by=uploaded_by, uploaded_file=file_obj
+            )
+            return Response(DataSourceSerializer(datasource).data, status=status.HTTP_201_CREATED)
+        except ValueError as exc:
+            return Response({"detail": str(exc)}, status=400)
 
 
 class DataSourceListView(generics.ListAPIView):
